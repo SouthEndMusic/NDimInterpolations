@@ -2,7 +2,8 @@ trivial_range(i::Integer) = i:i
 
 Base.length(itp_dim::AbstractInterpolationDimension) = length(itp_dim.t)
 
-function get_inputs(t::NTuple{N_in}, interpolation_dimensions::NTuple{N_in}) where {N_in}
+function get_inputs(
+        t::Tuple{Vararg{Number, N_in}}, interpolation_dimensions::NTuple{N_in}) where {N_in}
     idxs = ntuple(dim_in -> begin
             itp_dim = interpolation_dimensions[dim_in]
             get_idx(itp_dim, t[dim_in], itp_dim.iguesser)

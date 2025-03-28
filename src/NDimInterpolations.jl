@@ -36,7 +36,7 @@ end
 # Out of place single input evaluation
 function (interp::NDimInterpolation{
         N_out, N_in, I})(
-        t::NTuple{N_in, tType};
+        t::Tuple{Vararg{Number, N_in}};
         derivative_orders::NTuple{N_in, <:Integer} = ntuple(_ -> 0, N_in)
 ) where {N_out, N_in, I, tType <: Number}
     validate_derivative_orders(derivative_orders)
@@ -47,7 +47,8 @@ function (interp::NDimInterpolation{
         _interpolate(u, ts, t, idxs, derivative_orders, I)
     else
         # Vector output
-        out = similar(u, promote_type(eltype(u), tType), size(u)[(N_in + 1):end])
+        out = similar(
+            u, promote_type(eltype(u), map(eltype, t)...), size(u)[(N_in + 1):end])
         _interpolate!(out, u, ts, t, idxs, derivative_orders, I)
     end
 end
@@ -55,7 +56,7 @@ end
 # In place single input evaluation
 function (interp::NDimInterpolation{N_out, N_in, I})(
         out::AbstractArray,
-        t::NTuple{N_in, <:Number};
+        t::Tuple{Vararg{Number, N_in}};
         derivative_orders::NTuple{N_in, <:Integer} = ntuple(_ -> 0, N_in)
 ) where {N_out, N_in, I}
     validate_derivative_orders(derivative_orders)

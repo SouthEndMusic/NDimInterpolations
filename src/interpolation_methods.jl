@@ -1,13 +1,13 @@
 # Out of place KA friendly scalar valued interpolation
 function _interpolate(
         u::AbstractArray{Tu, N_in},
-        ts::NTuple{N_in, AbstractVector{Tt1}},
-        t::NTuple{N_in, Tt2},
+        ts::NTuple{N_in, AbstractVector{Tt}},
+        t::Tuple{Vararg{Number, N_in}},
         idxs::NTuple{N_in, <:Integer},
         derivative_orders::NTuple{N_in, <:Integer},
         ::Type{<:LinearInterpolationDimension} # For dispatching, can probably be done better
-) where {Tu, N_in, Tt1, Tt2}
-    out = zero(promote_type(Tu, Tt1, Tt2))
+) where {Tu, N_in, Tt}
+    out = zero(promote_type(Tu, Tt, map(typeof, t)...))
     any(>(1), derivative_orders) && return out
 
     tᵢ = ntuple(i -> ts[i][idxs[i]], N_in)
@@ -40,11 +40,11 @@ function _interpolate!(
         out,
         u::AbstractArray{T, N},
         ts::NTuple{N_in, <:AbstractArray},
-        t::NTuple{N_in, T1},
+        t::Tuple{Vararg{Number, N_in}},
         idxs::NTuple{N_in, <:Integer},
         derivative_orders::NTuple{N_in, <:Integer},
         ::Type{<:LinearInterpolationDimension} # For dispatching, can probably be done better
-) where {T, T1, N, N_in}
+) where {T, N, N_in}
     out .= 0
     any(>(1), derivative_orders) && return out
 

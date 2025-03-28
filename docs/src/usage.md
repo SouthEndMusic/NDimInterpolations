@@ -61,13 +61,17 @@ heatmap(out)
 
 ```@example tutorial
 using ForwardDiff
+
 u = reshape(u, 5, 10)
 itp = NDimInterpolation(interpolation_dimensions, u)
-
+∂₁itp = (t1, t2) ->  ForwardDiff.derivative(t_ -> itp(t_, t2), t1)
+out = ∂₁itp.(t_eval_1, t_eval_2')
+heatmap(out)
 ```
 
 ### Partial derivative w.r.t. first input (analytic)
 
 ```@example tutorial
-
+out = itp.(t_eval_1, t_eval_2'; derivative_orders = (1,0))
+heatmap(out)
 ```
