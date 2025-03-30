@@ -1,12 +1,9 @@
 module NDimInterpolations
 import FindFirstFunctions: searchsortedfirstcorrelated, searchsortedlastcorrelated,
                            Guesser
+using KernelAbstractions # Keep as dependency or make extension?
 
 abstract type AbstractInterpolationDimension end
-
-include("interpolation_utils.jl")
-include("interpolation_dimension.jl")
-include("interpolation_methods.jl")
 
 struct NDimInterpolation{
     N_out, N_in, I <: AbstractInterpolationDimension, uType <: AbstractArray}
@@ -23,6 +20,11 @@ struct NDimInterpolation{
     end
 end
 
+include("interpolation_utils.jl")
+include("interpolation_dimension.jl")
+include("interpolation_methods.jl")
+include("interpolation_parallel.jl")
+
 # Multiple `t` arguments to tuple (can these 2 be done in 1?)
 function (interp::NDimInterpolation)(t_args::Vararg{<:Number}; kwargs...)
     interp(t_args; kwargs...)
@@ -38,18 +40,19 @@ function (interp::NDimInterpolation{
         N_out, N_in, I})(
         t::Tuple{Vararg{Number, N_in}};
         derivative_orders::NTuple{N_in, <:Integer} = ntuple(_ -> 0, N_in)
-) where {N_out, N_in, I, tType <: Number}
+) where {N_out, N_in, I}
     validate_derivative_orders(derivative_orders)
     (; interpolation_dimensions, u) = interp
-    idxs, ts = get_inputs(t, interpolation_dimensions)
+    idx_eval = get_idx(t, interpolation_dimensions)
+    ts = get_ts(interpolation_dimensions)
     if iszero(N_out)
         # Scalar output
-        _interpolate(u, ts, t, idxs, derivative_orders, I)
+        _interpolate(u, ts, t, idx_eval, derivative_orders, I)
     else
         # Vector output
         out = similar(
-            u, promote_type(eltype(u), map(eltype, t)...), size(u)[(N_in + 1):end])
-        _interpolate!(out, u, ts, t, idxs, derivative_orders, I)
+            u, promote_type(eltype(u), map(eltype, t)...), get_output_size(interp))
+        _interpolate!(out, u, ts, t, idx_eval, derivative_orders, I)
     end
 end
 
@@ -61,11 +64,13 @@ function (interp::NDimInterpolation{N_out, N_in, I})(
 ) where {N_out, N_in, I}
     validate_derivative_orders(derivative_orders)
     (; interpolation_dimensions, u) = interp
-    idxs, ts = get_inputs(t, interpolation_dimensions)
+    idx_eval = get_idx(t, interpolation_dimensions)
+    ts = get_ts(interpolation_dimensions)
     @assert size(out) == size(u)[(N_in + 1):end]
-    _interpolate!(out, u, ts, t, idxs, derivative_orders, I)
+    _interpolate!(out, u, ts, t, idx_eval, derivative_orders, I)
 end
 
-export NDimInterpolation, LinearInterpolationDimension
+export NDimInterpolation, LinearInterpolationDimension, eval_unstructured,
+       eval_unstructured!, eval_grid, eval_grid!
 
 end # module NDimInterpolations

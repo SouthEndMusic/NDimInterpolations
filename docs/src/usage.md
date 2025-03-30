@@ -75,3 +75,30 @@ heatmap(out)
 out = itp.(t_eval_1, t_eval_2'; derivative_orders = (1,0))
 heatmap(out)
 ```
+
+## Multiple point evaluation (using KA)
+
+### Unstructured multi-point scalar evaluation (out of place)
+
+```@example tutorial
+using LinearAlgebra
+
+interpolation_dimensions = (
+    LinearInterpolationDimension(interpolation_dimensions[1].t; t_eval = t_eval_1),
+    LinearInterpolationDimension(interpolation_dimensions[2].t; t_eval = t_eval_2)
+)
+itp = NDimInterpolation(interpolation_dimensions, u)
+
+out = eval_unstructured(itp)
+heatmap(diagm(out))
+```
+
+### Grid vector evaluation (in place)
+
+```@example tutorial
+u = reshape(u, 5, 10, 1)
+itp = NDimInterpolation(interpolation_dimensions, u)
+out = zeros(100, 100, 1)
+eval_grid!(out, itp)
+heatmap(out[:,:,1])
+```

@@ -2,18 +2,25 @@ trivial_range(i::Integer) = i:i
 
 Base.length(itp_dim::AbstractInterpolationDimension) = length(itp_dim.t)
 
-function get_inputs(
-        t::Tuple{Vararg{Number, N_in}}, interpolation_dimensions::NTuple{N_in}) where {N_in}
-    idxs = ntuple(dim_in -> begin
-            itp_dim = interpolation_dimensions[dim_in]
-            get_idx(itp_dim, t[dim_in], itp_dim.iguesser)
-        end, N_in)
-    ts = ntuple(dim_in -> interpolation_dimensions[dim_in].t, N_in)
-    return idxs, ts
-end
-
 function validate_derivative_orders(derivative_orders::NTuple{N_in, <:Integer}) where {N_in}
     @assert all(≥(0), derivative_orders)
+end
+
+function get_ts(interpolation_dimensions::NTuple{
+        N_in, AbstractInterpolationDimension}) where {N_in}
+    ntuple(i -> interpolation_dimensions[i].t, N_in)
+end
+
+function collect_caches(interp::NDimInterpolation{N_out, N_in}) where {N_out, N_in}
+    (; u, interpolation_dimensions) = interp
+    ts = get_ts(interpolation_dimensions)
+    t_evals = ntuple(i -> interpolation_dimensions[i].t_eval, N_in)
+    idx_evals = ntuple(i -> interpolation_dimensions[i].idx_eval, N_in)
+    u, ts, t_evals, idx_evals
+end
+
+function get_output_size(interp::NDimInterpolation{N_out, N_in}) where {N_out, N_in}
+    size(interp.u)[(N_in + 1):end]
 end
 
 ##
@@ -34,15 +41,24 @@ function looks_linear(t; threshold = 1e-2)
     norm_var < threshold^2
 end
 
-function get_idx(A, t, iguess::Union{<:Integer, Guesser}; lb = 1,
+function get_idx(tvec::AbstractVector{<:Number}, t_eval::Number,
+        iguess::Union{<:Integer, Guesser}; lb = 1,
         ub_shift = -1, idx_shift = 0, side = :last)
-    tvec = A.t
     ub = length(tvec) + ub_shift
     return if side == :last
-        clamp(searchsortedlastcorrelated(tvec, t, iguess) + idx_shift, lb, ub)
+        clamp(searchsortedlastcorrelated(tvec, t_eval, iguess) + idx_shift, lb, ub)
     elseif side == :first
-        clamp(searchsortedfirstcorrelated(tvec, t, iguess) + idx_shift, lb, ub)
+        clamp(searchsortedfirstcorrelated(tvec, t_eval, iguess) + idx_shift, lb, ub)
     else
         error("side must be :first or :last")
     end
+end
+
+function get_idx(
+        t::Tuple{Vararg{Number, N_in}}, interpolation_dimensions::NTuple{N_in}) where {N_in}
+    idx_eval = ntuple(dim_in -> begin
+            itp_dim = interpolation_dimensions[dim_in]
+            get_idx(itp_dim.t, t[dim_in], itp_dim.iguesser)
+        end, N_in)
+    return idx_eval
 end

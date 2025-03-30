@@ -6,5 +6,8 @@ makedocs(
         assets = ["assets/favicon.ico"],
         canonical = "https://docs.sciml.ai/DataInterpolations/stable/"
     ),
-    pages = ["index.md", "usage.md"]
+    pages = [
+        "index.md",
+        "Usage" => "usage.md"
+    ]
 )

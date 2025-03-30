@@ -4,3 +4,7 @@ version = "0.1.0"
 
 [deps]
 FindFirstFunctions = "64ca27bc-2ba2-4a57-88aa-44e436879224"
+KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
+
+[compat]
+KernelAbstractions = "0.9.34"
