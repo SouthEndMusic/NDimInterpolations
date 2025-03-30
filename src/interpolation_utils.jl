@@ -23,42 +23,50 @@ function get_output_size(interp::NDimInterpolation{N_out, N_in}) where {N_out, N
     size(interp.u)[(N_in + 1):end]
 end
 
-##
-### NOTE: All functions below are copied from DataInterpolations.jl but have to be replaced by KA friendly versions
-##
-
-seems_linear(assume_linear_t::Bool, _) = assume_linear_t
-seems_linear(assume_linear_t::Number, t) = looks_linear(t; threshold = assume_linear_t)
-
-function looks_linear(t; threshold = 1e-2)
-    length(t) <= 2 && return true
-    t_0, t_f = first(t), last(t)
-    t_span = t_f - t_0
-    tspan_over_N = t_span * length(t)^(-1)
-    norm_var = sum(
-        (t_i - t_0 - i * tspan_over_N)^2 for (i, t_i) in enumerate(t)
-    ) / (length(t) * t_span^2)
-    norm_var < threshold^2
-end
-
-function get_idx(tvec::AbstractVector{<:Number}, t_eval::Number,
-        iguess::Union{<:Integer, Guesser}; lb = 1,
-        ub_shift = -1, idx_shift = 0, side = :last)
-    ub = length(tvec) + ub_shift
-    return if side == :last
-        clamp(searchsortedlastcorrelated(tvec, t_eval, iguess) + idx_shift, lb, ub)
-    elseif side == :first
-        clamp(searchsortedfirstcorrelated(tvec, t_eval, iguess) + idx_shift, lb, ub)
-    else
-        error("side must be :first or :last")
+# TODO: Implement a more efficient (GPU compatible) version
+function get_idx(tvec::AbstractVector{<:Number}, t_eval::Number)
+    idx = 0
+    for t in tvec
+        if t_eval < t
+            break
+        else
+            idx += 1
+        end
     end
+    clamp(idx, 1, length(tvec) - 1)
 end
 
 function get_idx(
         t::Tuple{Vararg{Number, N_in}}, interpolation_dimensions::NTuple{N_in}) where {N_in}
     idx_eval = ntuple(dim_in -> begin
             itp_dim = interpolation_dimensions[dim_in]
-            get_idx(itp_dim.t, t[dim_in], itp_dim.iguesser)
+            get_idx(itp_dim.t, t[dim_in])
         end, N_in)
     return idx_eval
+end
+
+function get_idx!(
+        idx::AbstractVector{Int},
+        tvec::AbstractVector{<:Number},
+        ts_eval::AbstractVector{<:Number}
+)
+    backend = get_backend(tvec)
+    if !isempty(idx)
+        get_idx_kernel(backend)(
+            idx,
+            tvec,
+            ts_eval,
+            ndrange = length(ts_eval)
+        )
+    end
+    synchronize(backend)
+end
+
+@kernel function get_idx_kernel(
+        idx,
+        @Const(tvec),
+        @Const(t_eval)
+)
+    i = @index(Global, Linear)
+    idx[i] = get_idx(tvec, t_eval[i])
 end

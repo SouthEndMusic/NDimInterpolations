@@ -1,6 +1,4 @@
 module NDimInterpolations
-import FindFirstFunctions: searchsortedfirstcorrelated, searchsortedlastcorrelated,
-                           Guesser
 using KernelAbstractions # Keep as dependency or make extension?
 
 abstract type AbstractInterpolationDimension end

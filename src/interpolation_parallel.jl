@@ -12,6 +12,7 @@ function eval_unstructured!(
         interp::NDimInterpolation{N_out, N_in, I},
         derivative_orders::NTuple{N_in, <:Integer} = ntuple(_ -> 0, N_in)
 ) where {N_out, N_in, I}
+    validate_derivative_orders(derivative_orders)
     backend = get_backend(out)
     u, ts, t_evals, idx_evals = collect_caches(interp)
     @assert all(t -> length(t) == size(out, 1), t_evals)
@@ -20,8 +21,8 @@ function eval_unstructured!(
         out,
         u, ts, t_evals, idx_evals,
         derivative_orders,
-        :unstructured,
-        N_out, N_in, I,
+        false,
+        I,
         ndrange = size(out, 1)
     )
     synchronize(backend)
@@ -39,6 +40,7 @@ function eval_grid!(
         interp::NDimInterpolation{N_out, N_in, I};
         derivative_orders::NTuple{N_in, <:Integer} = ntuple(_ -> 0, N_in)
 ) where {N_out, N_in, I}
+    validate_derivative_orders(derivative_orders)
     backend = get_backend(out)
     u, ts, t_evals, idx_evals = collect_caches(interp)
     @assert all(i -> size(out, i) == length(t_evals[i]), N_in)
@@ -47,8 +49,8 @@ function eval_grid!(
         out,
         u, ts, t_evals, idx_evals,
         derivative_orders,
-        :grid,
-        N_out, N_in, I,
+        true,
+        I,
         ndrange = size(out)[1:N_in]
     )
     synchronize(backend)
@@ -62,19 +64,20 @@ end
         @Const(t_evals),
         @Const(idx_evals),
         derivative_orders,
-        mode,
-        N_out,
-        N_in,
+        eval_grid,
         I
 )
+    N_in = length(ts)
+    N_out = ndims(u) - N_in
+
     k = @index(Global, NTuple)
 
-    if mode == :unstructured
-        t_eval = ntuple(i -> t_evals[i][only(k)], N_in)
-        idx_eval = ntuple(i -> idx_evals[i][only(k)], N_in)
-    else # mode == :grid
+    if eval_grid
         t_eval = ntuple(i -> t_evals[i][k[i]], N_in)
         idx_eval = ntuple(i -> idx_evals[i][k[i]], N_in)
+    else
+        t_eval = ntuple(i -> t_evals[i][only(k)], N_in)
+        idx_eval = ntuple(i -> idx_evals[i][only(k)], N_in)
     end
 
     if iszero(N_out)
