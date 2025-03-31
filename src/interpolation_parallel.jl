@@ -1,5 +1,5 @@
 function eval_unstructured(
-        interp::NDimInterpolation{N_out, N_in};
+        interp::NDInterpolation{N_out, N_in};
         kwargs...
 ) where {N_out, N_in}
     n_points = length(first(interp.interpolation_dimensions).t_eval)
@@ -9,7 +9,7 @@ end
 
 function eval_unstructured!(
         out::AbstractArray,
-        interp::NDimInterpolation{N_out, N_in, I},
+        interp::NDInterpolation{N_out, N_in, I},
         derivative_orders::NTuple{N_in, <:Integer} = ntuple(_ -> 0, N_in)
 ) where {N_out, N_in, I}
     validate_derivative_orders(derivative_orders)
@@ -29,7 +29,7 @@ function eval_unstructured!(
     return out
 end
 
-function eval_grid(interp::NDimInterpolation{N_out, N_in}; kwargs...) where {N_out, N_in}
+function eval_grid(interp::NDInterpolation{N_out, N_in}; kwargs...) where {N_out, N_in}
     grid_size = ntuple(i -> interp.interpolation_dimensions[i].t_eval, N_in)
     out = similar(interp.u, (grid_size..., get_output_size(interp)...))
     eval_grid!(out, interp; kwargs...)
@@ -37,7 +37,7 @@ end
 
 function eval_grid!(
         out::AbstractArray,
-        interp::NDimInterpolation{N_out, N_in, I};
+        interp::NDInterpolation{N_out, N_in, I};
         derivative_orders::NTuple{N_in, <:Integer} = ntuple(_ -> 0, N_in)
 ) where {N_out, N_in, I}
     validate_derivative_orders(derivative_orders)

@@ -11,7 +11,7 @@ function get_ts(interpolation_dimensions::NTuple{
     ntuple(i -> interpolation_dimensions[i].t, N_in)
 end
 
-function collect_caches(interp::NDimInterpolation{N_out, N_in}) where {N_out, N_in}
+function collect_caches(interp::NDInterpolation{N_out, N_in}) where {N_out, N_in}
     (; u, interpolation_dimensions) = interp
     ts = get_ts(interpolation_dimensions)
     t_evals = ntuple(i -> interpolation_dimensions[i].t_eval, N_in)
@@ -19,7 +19,7 @@ function collect_caches(interp::NDimInterpolation{N_out, N_in}) where {N_out, N_
     u, ts, t_evals, idx_evals
 end
 
-function get_output_size(interp::NDimInterpolation{N_out, N_in}) where {N_out, N_in}
+function get_output_size(interp::NDInterpolation{N_out, N_in}) where {N_out, N_in}
     size(interp.u)[(N_in + 1):end]
 end
 

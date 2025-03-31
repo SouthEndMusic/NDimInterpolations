@@ -1,7 +1,7 @@
-using Documenter, NDimInterpolations
+using Documenter, NDInterpolations
 
 makedocs(
-    sitename = "NDimInterpolations.jl",
+    sitename = "NDInterpolations.jl",
     format = Documenter.HTML(
         assets = ["assets/favicon.ico"],
         canonical = "https://docs.sciml.ai/DataInterpolations/stable/"

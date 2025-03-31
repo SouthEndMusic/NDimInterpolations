@@ -1,13 +1,13 @@
-module NDimInterpolations
+module NDInterpolations
 using KernelAbstractions # Keep as dependency or make extension?
 
 abstract type AbstractInterpolationDimension end
 
-struct NDimInterpolation{
+struct NDInterpolation{
     N_out, N_in, I <: AbstractInterpolationDimension, uType <: AbstractArray}
     interpolation_dimensions::NTuple{N_in, I}
     u::uType
-    function NDimInterpolation(
+    function NDInterpolation(
             interpolation_dimensions::NTuple{N_in, I},
             u::AbstractArray{T, N}
     ) where {N_in, I, T, N}
@@ -24,17 +24,17 @@ include("interpolation_methods.jl")
 include("interpolation_parallel.jl")
 
 # Multiple `t` arguments to tuple (can these 2 be done in 1?)
-function (interp::NDimInterpolation)(t_args::Vararg{<:Number}; kwargs...)
+function (interp::NDInterpolation)(t_args::Vararg{<:Number}; kwargs...)
     interp(t_args; kwargs...)
 end
 
-function (interp::NDimInterpolation)(
+function (interp::NDInterpolation)(
         out::AbstractArray, t_args::Vararg{<:Number}; kwargs...)
     interp(out, t_args; kwargs...)
 end
 
 # Out of place single input evaluation
-function (interp::NDimInterpolation{
+function (interp::NDInterpolation{
         N_out, N_in, I})(
         t::Tuple{Vararg{Number, N_in}};
         derivative_orders::NTuple{N_in, <:Integer} = ntuple(_ -> 0, N_in)
@@ -55,7 +55,7 @@ function (interp::NDimInterpolation{
 end
 
 # In place single input evaluation
-function (interp::NDimInterpolation{N_out, N_in, I})(
+function (interp::NDInterpolation{N_out, N_in, I})(
         out::AbstractArray,
         t::Tuple{Vararg{Number, N_in}};
         derivative_orders::NTuple{N_in, <:Integer} = ntuple(_ -> 0, N_in)
@@ -68,7 +68,7 @@ function (interp::NDimInterpolation{N_out, N_in, I})(
     _interpolate!(out, u, ts, t, idx_eval, derivative_orders, I)
 end
 
-export NDimInterpolation, LinearInterpolationDimension, eval_unstructured,
+export NDInterpolation, LinearInterpolationDimension, eval_unstructured,
        eval_unstructured!, eval_grid, eval_grid!
 
-end # module NDimInterpolations
+end # module NDInterpolations
