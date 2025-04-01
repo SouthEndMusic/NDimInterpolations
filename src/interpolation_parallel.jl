@@ -1,7 +1,7 @@
 function eval_unstructured(
-        interp::NDInterpolation{N_out, N_in};
+        interp::NDInterpolation{N_in};
         kwargs...
-) where {N_out, N_in}
+) where {N_in}
     n_points = length(first(interp.interp_dims).t_eval)
     out = similar(interp.u, (n_points, get_output_size(interp)...))
     eval_unstructured!(out, interp; kwargs...)
@@ -9,9 +9,9 @@ end
 
 function eval_unstructured!(
         out::AbstractArray,
-        interp::NDInterpolation{N_out, N_in, I},
+        interp::NDInterpolation{N_in},
         derivative_orders::NTuple{N_in, <:Integer} = ntuple(_ -> 0, N_in)
-) where {N_out, N_in, I}
+) where {N_in}
     validate_derivative_orders(derivative_orders)
     backend = get_backend(out)
     @assert all(i -> length(interp.interp_dims[i].t_eval) == size(out, 1), N_in) "The t_eval of all interpolation dimensions must have the same length as the first dimension of out."
@@ -27,7 +27,7 @@ function eval_unstructured!(
     return out
 end
 
-function eval_grid(interp::NDInterpolation{N_out, N_in}; kwargs...) where {N_out, N_in}
+function eval_grid(interp::NDInterpolation{N_in}; kwargs...) where {N_in}
     grid_size = ntuple(i -> interp.interp_dims[i].t_eval, N_in)
     out = similar(interp.u, (grid_size..., get_output_size(interp)...))
     eval_grid!(out, interp; kwargs...)
@@ -35,9 +35,9 @@ end
 
 function eval_grid!(
         out::AbstractArray,
-        interp::NDInterpolation{N_out, N_in, I};
+        interp::NDInterpolation{N_in};
         derivative_orders::NTuple{N_in, <:Integer} = ntuple(_ -> 0, N_in)
-) where {N_out, N_in, I}
+) where {N_in}
     validate_derivative_orders(derivative_orders)
     backend = get_backend(out)
     @assert all(i -> size(out, i) == length(interp.interp_dims[i].t_eval), N_in) "For the first N_in dimensions of out the length must match the t_eval of the corresponding interpolation dimension."

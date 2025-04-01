@@ -11,21 +11,21 @@ function get_ts(interp_dims::NTuple{
     ntuple(i -> interp_dims[i].t, N_in)
 end
 
-function get_output_size(interp::NDInterpolation{N_out, N_in}) where {N_out, N_in}
+function get_output_size(interp::NDInterpolation{N_in}) where {N_in}
     size(interp.u)[(N_in + 1):end]
 end
 
 function make_out(
-        interp::NDInterpolation{0, N_in},
+        interp::NDInterpolation{N_in, 0},
         t::NTuple{N_in, >:Number}
 ) where {N_in}
     zero(promote_type(eltype(interp.u), map(typeof, t)...))
 end
 
 function make_out(
-        interp::NDInterpolation{N_out, N_in},
+        interp::NDInterpolation{N_in},
         t::NTuple{N_in, >:Number}
-) where {N_out, N_in}
+) where {N_in}
     similar(
         interp.u, promote_type(eltype(interp.u), map(eltype, t)...), get_output_size(interp))
 end

@@ -1,10 +1,10 @@
 function _interpolate!(
         out,
-        A::NDInterpolation{N_out, N_in, <:LinearInterpolationDimension},
+        A::NDInterpolation{N_in, N_out, ID},
         t::Tuple{Vararg{Number, N_in}},
         idx::NTuple{N_in, <:Integer},
         derivative_orders::NTuple{N_in, <:Integer}
-) where {N_out, N_in}
+) where {N_in, N_out, ID <: LinearInterpolationDimension}
     if iszero(N_out)
         out = zero(out)
     else
@@ -43,11 +43,11 @@ end
 
 function _interpolate!(
         out,
-        A::NDInterpolation{N_out, N_in, <:ConstantInterpolationDimension},
+        A::NDInterpolation{N_in, N_out, ID},
         t::Tuple{Vararg{Number, N_in}},
         idx::NTuple{N_in, <:Integer},
         derivative_orders::NTuple{N_in, <:Integer}
-) where {N_out, N_in}
+) where {N_in, N_out, ID <: ConstantInterpolationDimension}
     if iszero(N_out)
         out = zero(out)
     else
