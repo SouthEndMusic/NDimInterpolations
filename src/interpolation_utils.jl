@@ -6,67 +6,65 @@ function validate_derivative_orders(derivative_orders::NTuple{N_in, <:Integer}) 
     @assert all(≥(0), derivative_orders)
 end
 
-function get_ts(interpolation_dimensions::NTuple{
+function get_ts(interp_dims::NTuple{
         N_in, AbstractInterpolationDimension}) where {N_in}
-    ntuple(i -> interpolation_dimensions[i].t, N_in)
-end
-
-function collect_caches(interp::NDInterpolation{N_out, N_in}) where {N_out, N_in}
-    (; u, interpolation_dimensions) = interp
-    ts = get_ts(interpolation_dimensions)
-    t_evals = ntuple(i -> interpolation_dimensions[i].t_eval, N_in)
-    idx_evals = ntuple(i -> interpolation_dimensions[i].idx_eval, N_in)
-    u, ts, t_evals, idx_evals
+    ntuple(i -> interp_dims[i].t, N_in)
 end
 
 function get_output_size(interp::NDInterpolation{N_out, N_in}) where {N_out, N_in}
     size(interp.u)[(N_in + 1):end]
 end
 
+function make_out(
+        interp::NDInterpolation{0, N_in},
+        t::NTuple{N_in, >:Number}
+) where {N_in}
+    zero(promote_type(eltype(interp.u), map(typeof, t)...))
+end
+
+function make_out(
+        interp::NDInterpolation{N_out, N_in},
+        t::NTuple{N_in, >:Number}
+) where {N_out, N_in}
+    similar(
+        interp.u, promote_type(eltype(interp.u), map(eltype, t)...), get_output_size(interp))
+end
+
 # TODO: Implement a more efficient (GPU compatible) version
-function get_idx(tvec::AbstractVector{<:Number}, t_eval::Number)
-    idx = 0
-    for t in tvec
-        if t_eval < t
-            break
-        else
-            idx += 1
-        end
-    end
-    clamp(idx, 1, length(tvec) - 1)
+function get_idx(
+        interp_dim::AbstractInterpolationDimension,
+        t_eval::Number
+)
+    (; t) = interp_dim
+    left = (interp_dim isa ConstantInterpolationDimension) ? interp_dim.left : true
+    idx = clamp(searchsortedlast(t, t_eval), 1, length(t) - 1)
+    !left && (idx += 1)
+    idx
 end
 
 function get_idx(
-        t::Tuple{Vararg{Number, N_in}}, interpolation_dimensions::NTuple{N_in}) where {N_in}
-    idx_eval = ntuple(dim_in -> begin
-            itp_dim = interpolation_dimensions[dim_in]
-            get_idx(itp_dim.t, t[dim_in])
-        end, N_in)
-    return idx_eval
+        interp_dims::NTuple{N_in},
+        t::Tuple{Vararg{Number, N_in}};
+) where {N_in}
+    ntuple(dim_in -> get_idx(interp_dims[dim_in], t[dim_in]), N_in)
 end
 
-function get_idx!(
-        idx::AbstractVector{Int},
-        tvec::AbstractVector{<:Number},
-        ts_eval::AbstractVector{<:Number}
+function set_eval_idx!(
+        interp_dim::AbstractInterpolationDimension,
 )
-    backend = get_backend(tvec)
-    if !isempty(idx)
-        get_idx_kernel(backend)(
-            idx,
-            tvec,
-            ts_eval,
-            ndrange = length(ts_eval)
+    backend = get_backend(interp_dim.t)
+    if !isempty(interp_dim.t_eval)
+        set_idx_kernel(backend)(
+            interp_dim,
+            ndrange = length(interp_dim.t_eval)
         )
     end
     synchronize(backend)
 end
 
-@kernel function get_idx_kernel(
-        idx,
-        @Const(tvec),
-        @Const(t_eval)
+@kernel function set_idx_kernel(
+        interp_dim
 )
     i = @index(Global, Linear)
-    idx[i] = get_idx(tvec, t_eval[i])
+    interp_dim.idx_eval[i] = get_idx(interp_dim, interp_dim.t_eval[i])
 end

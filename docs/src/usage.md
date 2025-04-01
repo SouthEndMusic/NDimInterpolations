@@ -7,19 +7,19 @@ using NDInterpolations
 using Random
 Random.seed!(1)
 
-interpolation_dimensions = (
+interp_dims = (
     LinearInterpolationDimension(cumsum(0.5 .+ rand(5))),
     LinearInterpolationDimension(cumsum(0.5 .+ rand(10)))
 )
 
 t_eval_1 = range(
-    first(interpolation_dimensions[1].t),
-    last(interpolation_dimensions[1].t),
+    first(interp_dims[1].t),
+    last(interp_dims[1].t),
     length = 100
 )
 t_eval_2 = range(
-    first(interpolation_dimensions[2].t),
-    last(interpolation_dimensions[2].t),
+    first(interp_dims[2].t),
+    last(interp_dims[2].t),
     length = 100
 )
 ```
@@ -30,7 +30,7 @@ t_eval_2 = range(
 using Plots
 
 u = rand(5, 10)
-itp = NDInterpolation(interpolation_dimensions, u)
+itp = NDInterpolation(interp_dims, u)
 out = itp.(t_eval_1, t_eval_2')
 heatmap(out)
 ```
@@ -39,7 +39,7 @@ heatmap(out)
 
 ```@example tutorial
 u = reshape(u, 5, 10, 1)
-itp = NDInterpolation(interpolation_dimensions, u)
+itp = NDInterpolation(interp_dims, u)
 out = itp.(t_eval_1, t_eval_2')
 heatmap(map(only, out))
 ```
@@ -63,7 +63,7 @@ heatmap(out)
 using ForwardDiff
 
 u = reshape(u, 5, 10)
-itp = NDInterpolation(interpolation_dimensions, u)
+itp = NDInterpolation(interp_dims, u)
 ∂₁itp = (t1, t2) ->  ForwardDiff.derivative(t_ -> itp(t_, t2), t1)
 out = ∂₁itp.(t_eval_1, t_eval_2')
 heatmap(out)
@@ -83,11 +83,11 @@ heatmap(out)
 ```@example tutorial
 using LinearAlgebra
 
-interpolation_dimensions = (
-    LinearInterpolationDimension(interpolation_dimensions[1].t; t_eval = t_eval_1),
-    LinearInterpolationDimension(interpolation_dimensions[2].t; t_eval = t_eval_2)
+interp_dims = (
+    LinearInterpolationDimension(interp_dims[1].t; t_eval = t_eval_1),
+    LinearInterpolationDimension(interp_dims[2].t; t_eval = t_eval_2)
 )
-itp = NDInterpolation(interpolation_dimensions, u)
+itp = NDInterpolation(interp_dims, u)
 
 out = eval_unstructured(itp)
 heatmap(diagm(out))
@@ -97,7 +97,7 @@ heatmap(diagm(out))
 
 ```@example tutorial
 u = reshape(u, 5, 10, 1)
-itp = NDInterpolation(interpolation_dimensions, u)
+itp = NDInterpolation(interp_dims, u)
 out = zeros(100, 100, 1)
 eval_grid!(out, itp)
 heatmap(out[:,:,1])

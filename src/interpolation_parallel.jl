@@ -2,7 +2,7 @@ function eval_unstructured(
         interp::NDInterpolation{N_out, N_in};
         kwargs...
 ) where {N_out, N_in}
-    n_points = length(first(interp.interpolation_dimensions).t_eval)
+    n_points = length(first(interp.interp_dims).t_eval)
     out = similar(interp.u, (n_points, get_output_size(interp)...))
     eval_unstructured!(out, interp; kwargs...)
 end
@@ -14,15 +14,13 @@ function eval_unstructured!(
 ) where {N_out, N_in, I}
     validate_derivative_orders(derivative_orders)
     backend = get_backend(out)
-    u, ts, t_evals, idx_evals = collect_caches(interp)
-    @assert all(t -> length(t) == size(out, 1), t_evals)
+    @assert all(i -> length(interp.interp_dims[i].t_eval) == size(out, 1), N_in)
     @assert size(out)[2:end] == get_output_size(interp)
     eval_kernel(backend)(
         out,
-        u, ts, t_evals, idx_evals,
+        interp,
         derivative_orders,
         false,
-        I,
         ndrange = size(out, 1)
     )
     synchronize(backend)
@@ -30,7 +28,7 @@ function eval_unstructured!(
 end
 
 function eval_grid(interp::NDInterpolation{N_out, N_in}; kwargs...) where {N_out, N_in}
-    grid_size = ntuple(i -> interp.interpolation_dimensions[i].t_eval, N_in)
+    grid_size = ntuple(i -> interp.interp_dims[i].t_eval, N_in)
     out = similar(interp.u, (grid_size..., get_output_size(interp)...))
     eval_grid!(out, interp; kwargs...)
 end
@@ -42,15 +40,13 @@ function eval_grid!(
 ) where {N_out, N_in, I}
     validate_derivative_orders(derivative_orders)
     backend = get_backend(out)
-    u, ts, t_evals, idx_evals = collect_caches(interp)
-    @assert all(i -> size(out, i) == length(t_evals[i]), N_in)
+    @assert all(i -> size(out, i) == length(interp.interp_dims[i].t_eval), N_in)
     @assert size(out)[(N_in + 1):end] == get_output_size(interp)
     eval_kernel(backend)(
         out,
-        u, ts, t_evals, idx_evals,
+        interp,
         derivative_orders,
         true,
-        I,
         ndrange = size(out)[1:N_in]
     )
     synchronize(backend)
@@ -59,32 +55,29 @@ end
 
 @kernel function eval_kernel(
         out,
-        @Const(u),
-        @Const(ts),
-        @Const(t_evals),
-        @Const(idx_evals),
+        @Const(A),
         derivative_orders,
-        eval_grid,
-        I
+        eval_grid
 )
-    N_in = length(ts)
-    N_out = ndims(u) - N_in
+    N_in = length(A.interp_dims)
+    N_out = ndims(A.u) - N_in
 
     k = @index(Global, NTuple)
 
     if eval_grid
-        t_eval = ntuple(i -> t_evals[i][k[i]], N_in)
-        idx_eval = ntuple(i -> idx_evals[i][k[i]], N_in)
+        t_eval = ntuple(i -> A.interp_dims[i].t_eval[k[i]], N_in)
+        idx_eval = ntuple(i -> A.interp_dims[i].idx_eval[k[i]], N_in)
     else
-        t_eval = ntuple(i -> t_evals[i][only(k)], N_in)
-        idx_eval = ntuple(i -> idx_evals[i][only(k)], N_in)
+        t_eval = ntuple(i -> A.interp_dims[i].t_eval[only(k)], N_in)
+        idx_eval = ntuple(i -> A.interp_dims[i].idx_eval[only(k)], N_in)
     end
 
     if iszero(N_out)
-        out[k...] = _interpolate(u, ts, t_eval, idx_eval, derivative_orders, I)
+        out[k...] = _interpolate!(
+            make_out(A, t_eval), A, t_eval, idx_eval, derivative_orders)
     else
         _interpolate!(
             view(out, k..., ntuple(_ -> Colon(), N_out)...),
-            u, ts, t_eval, idx_eval, derivative_orders, I)
+            A, t_eval, idx_eval, derivative_orders)
     end
 end
