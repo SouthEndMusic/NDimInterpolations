@@ -31,7 +31,7 @@ function _interpolate!(
                 iszero(d) ? t₂ - t_ : -one(t_)
             end
         end
-        J = (ntuple(i -> idx[i] + I[i], N_in)..., ntuple(_ -> Colon(), N_out)...)
+        J = (ntuple(i -> idx[i] + I[i], N_in)..., ..)
         if iszero(N_out)
             out += c * A.u[J...]
         else

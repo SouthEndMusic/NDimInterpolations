@@ -1,6 +1,7 @@
 module NDInterpolations
 using KernelAbstractions # Keep as dependency or make extension?
 using Adapt: @adapt_structure
+using EllipsisNotation
 
 abstract type AbstractInterpolationDimension end
 

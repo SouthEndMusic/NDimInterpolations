@@ -77,7 +77,7 @@ end
             make_out(A, t_eval), A, t_eval, idx_eval, derivative_orders)
     else
         _interpolate!(
-            view(out, k..., ntuple(_ -> Colon(), N_out)...),
+            view(out, k..., ..),
             A, t_eval, idx_eval, derivative_orders)
     end
 end
