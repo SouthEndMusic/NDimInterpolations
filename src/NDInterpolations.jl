@@ -13,8 +13,8 @@ struct NDInterpolation{
             u::AbstractArray{T, N}
     ) where {N_in, I, T, N}
         N_out = N - N_in # Compile time inferrable?
-        @assert N_out ≥ 0
-        @assert ntuple(i -> length(interp_dims[i]), N_in) == size(u)[1:N_in]
+        @assert N_out≥0 "The number of dimensions of u must be at least the number of interpolation dimensions."
+        @assert ntuple(i -> length(interp_dims[i]), N_in)==size(u)[1:N_in] "For the first N_in dimensions of u the length must match the t of the corresponding interpolation dimension."
         new{N_out, N_in, I, typeof(u)}(interp_dims, u)
     end
 end
@@ -44,7 +44,7 @@ function (interp::NDInterpolation{N_out, N_in, I})(
 ) where {N_out, N_in, I}
     validate_derivative_orders(derivative_orders)
     idx = get_idx(interp.interp_dims, t)
-    @assert size(out) == size(interp.u)[(N_in + 1):end]
+    @assert size(out)==size(interp.u)[(N_in + 1):end] "The size of the out must match the size of the last N_out dimensions of u."
     _interpolate!(out, interp, t, idx, derivative_orders)
 end
 

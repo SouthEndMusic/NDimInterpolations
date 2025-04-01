@@ -3,7 +3,7 @@ trivial_range(i::Integer) = i:i
 Base.length(itp_dim::AbstractInterpolationDimension) = length(itp_dim.t)
 
 function validate_derivative_orders(derivative_orders::NTuple{N_in, <:Integer}) where {N_in}
-    @assert all(≥(0), derivative_orders)
+    @assert all(≥(0), derivative_orders) "Derivative orders must me non-negative."
 end
 
 function get_ts(interp_dims::NTuple{
