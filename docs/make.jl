@@ -12,3 +12,5 @@ makedocs(
         "Interpolation Types" => "interpolation_types.md"
     ]
 )
+
+deploydocs(; repo = "github.com/SouthEndMusic/NDInterpolations.jl.git")
