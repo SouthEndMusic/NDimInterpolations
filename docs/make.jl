@@ -8,6 +8,7 @@ makedocs(
     ),
     pages = [
         "index.md",
-        "Usage" => "usage.md"
+        "Usage" => "usage.md",
+        "Interpolation Types" => "interpolation_types.md"
     ]
 )
