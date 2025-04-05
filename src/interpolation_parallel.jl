@@ -28,7 +28,7 @@ function eval_unstructured!(
 end
 
 function eval_grid(interp::NDInterpolation{N_in}; kwargs...) where {N_in}
-    grid_size = ntuple(i -> interp.interp_dims[i].t_eval, N_in)
+    grid_size = map(itp_dim -> length(itp_dim.t_eval), interp.interp_dims)
     out = similar(interp.u, (grid_size..., get_output_size(interp)...))
     eval_grid!(out, interp; kwargs...)
 end
